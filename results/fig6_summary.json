@@ -1,0 +1,15 @@
+{
+  "threshold_mode": "reconstructed",
+  "matching_at_6_6_percent": 107.9574316190158,
+  "printed_cd_at_6_6_um": 6.113520765565773,
+  "write_width_for_5_9_um": 6.54506717754588,
+  "width_reinforcement_at_5_9_percent": 110.93334199230304,
+  "dose_scale_for_5_4": 1.0912862376677754,
+  "dose_reinforcement_at_5_4_percent": 109.12862376677754,
+  "continuous_limits_um": {
+    "uncorrected_design_um": 6.538690601852281,
+    "uncorrected_printed_cd_um": 5.808467394571385,
+    "width_corrected_um": 5.808467394571385,
+    "dose_corrected_um": 5.297608383223795
+  }
+}
