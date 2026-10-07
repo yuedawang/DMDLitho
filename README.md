@@ -1,5 +1,7 @@
 # DMDLitho
 
+[![Tests](https://github.com/yuedawang/DMDLitho/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/yuedawang/DMDLitho/actions/workflows/tests.yml)
+
 A lightweight numerical reproduction of model-based optical proximity
 correction (OPC) for DMD-based maskless lithography, following Hur & Seo (2012).
 
@@ -285,8 +287,8 @@ physical implementation sections contain explanatory English comments.
 
 The single GitHub Actions workflow in `.github/workflows/tests.yml` installs
 the development extra and runs pytest on Windows with Python 3.11 for
-pushes and pull requests. Its commands were validated locally; the hosted
-workflow has not run because this project has not been published.
+pushes and pull requests. Its commands were validated locally, and the first
+public workflow run passed. The badge above links to the current CI status.
 
 ## Limitations and future work
 
