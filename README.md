@@ -92,25 +92,21 @@ is the integral of a projected Gaussian. Eq. (4) gives
 
 $$
 q(x)=\frac{E(x)}{E_0}=\frac12\left[
-\operatorname{erf}\left(\frac{x+l/2}{\sqrt2 w}\right)-
-\operatorname{erf}\left(\frac{x-l/2}{\sqrt2 w}\right)\right].
+\mathrm{erf}\left(\frac{x+l/2}{\sqrt2 w}\right)-
+\mathrm{erf}\left(\frac{x-l/2}{\sqrt2 w}\right)\right].
 $$
 
 Eq. (7) gives the center peak:
 
-$$q(0)=\operatorname{erf}\left(\frac{l}{2\sqrt2 w}\right).$$
+$$q(0)=\mathrm{erf}\left(\frac{l}{2\sqrt2 w}\right).$$
 
 The positive-resist contrast relation in Eq. (5) is
 $\gamma=1/\ln(E_{cl}/E_{th})$. Define $r_{th}=E_{th}/E_0$ and
 $r_{cl}=E_{cl}/E_0$. Eq. (6) is implemented as normalized **removed** depth:
 
-$$
-\frac{d}{T_0}=\begin{cases}
-0 & q<r_{th},\\
-\gamma\ln(q/r_{th}) & r_{th}\le q<r_{cl},\\
-1 & q\ge r_{cl}.
-\end{cases}
-$$
+- For $q<r_{th}$: $d/T_0=0$.
+- For $r_{th}\le q<r_{cl}$: $d/T_0=\gamma\ln(q/r_{th})$.
+- For $q\ge r_{cl}$: $d/T_0=1$.
 
 For dose correction replace $q$ by $\alpha q$. Zero removed depth means
 no development; one means complete clearing. Remaining thickness is
