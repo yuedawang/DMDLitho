@@ -1,0 +1,15 @@
+{
+  "input_parameters": {
+    "beam_pitch_um": 25.0,
+    "writing_period": 16,
+    "array_columns": 768,
+    "scan_velocity_mm_s": 24.0,
+    "switching_frequency_hz": 15400.0
+  },
+  "tilt_angle_deg": 3.576334374997351,
+  "address_pitch_um": 1.5594571538795132,
+  "moving_pitch_um": 1.5584415584415585,
+  "relative_pitch_mismatch": 0.0006512493372634047,
+  "redundancy": 48,
+  "repeated_writing_time_s": 0.003116883116883117
+}

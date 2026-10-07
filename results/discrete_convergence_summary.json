@@ -1,0 +1,60 @@
+{
+  "width_um": 10.0,
+  "gaussian_radius_um": 2.0,
+  "beam_pitch_um": 25.0,
+  "array_columns": 768,
+  "evaluation_grid": {
+    "min_um": -17.0,
+    "max_um": 17.0,
+    "point_count": 6001
+  },
+  "address_convention": "centered full cells with paired partial boundary cells",
+  "physical_dose_scale_factored_out": true,
+  "rows": [
+    {
+      "writing_period": 4,
+      "address_pitch_um": 6.063390625908324,
+      "pitch_over_radius": 3.031695312954162,
+      "address_count": 3,
+      "total_weight_um": 10.0,
+      "relative_l2_error": 0.1984167672098833,
+      "max_absolute_error": 0.3264872945425257
+    },
+    {
+      "writing_period": 8,
+      "address_pitch_um": 3.1008683647302115,
+      "pitch_over_radius": 1.5504341823651058,
+      "address_count": 5,
+      "total_weight_um": 9.999999999999998,
+      "relative_l2_error": 0.030997091482538507,
+      "max_absolute_error": 0.029157202415440397
+    },
+    {
+      "writing_period": 16,
+      "address_pitch_um": 1.5594571538795132,
+      "pitch_over_radius": 0.7797285769397566,
+      "address_count": 8,
+      "total_weight_um": 10.0,
+      "relative_l2_error": 0.0071447285457512675,
+      "max_absolute_error": 0.006388144374735116
+    },
+    {
+      "writing_period": 32,
+      "address_pitch_um": 0.7808688094430303,
+      "pitch_over_radius": 0.39043440472151514,
+      "address_count": 14,
+      "total_weight_um": 9.999999999999996,
+      "relative_l2_error": 0.0017528234466512682,
+      "max_absolute_error": 0.0015546331940476943
+    },
+    {
+      "writing_period": 64,
+      "address_pitch_um": 0.39057732501355286,
+      "pitch_over_radius": 0.19528866250677643,
+      "address_count": 27,
+      "total_weight_um": 10.0,
+      "relative_l2_error": 0.00043538654503084186,
+      "max_absolute_error": 0.00038651953043111753
+    }
+  ]
+}

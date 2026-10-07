@@ -36,9 +36,11 @@ flowchart LR
     D --> E[Width / dose pre-compensation]
 ```
 
-**Status: v0.1.0.** Reproduces the isolated 1D analytical simulations in
-Figs. 5–7. Explicit 2D DMD scanning and experimentally calibrated process
-prediction are outside the current model.
+**Status: v0.2.0.** The
+validated v0.1 analytical reproduction of Figs. 5–7 is preserved. The new
+[one-dimensional address-grid reconstruction](#discrete-dmd-address-grid-exposure-reconstruction-v02)
+adds scan geometry and midpoint-quadrature exposure analysis. Explicit 2D DMD scanning and
+experimentally calibrated process prediction remain outside the model.
 
 ## Quick start
 
@@ -251,6 +253,153 @@ index decreases to “0%”; Fig. 6 and the definition $100l/CD$ instead show
 an approach to **100%**. The implementation follows the definition and
 figure rather than propagating that apparent textual error.
 
+## Discrete DMD address-grid exposure reconstruction (v0.2)
+
+v0.1 directly implements continuous Eq. (4). v0.2
+adds the scan geometry behind Fig. 3 and a one-dimensional discrete Gaussian
+writing sum. It does not simulate a full DMD array, timed frames or stage
+trajectories. The original analytical model remains the reference solution.
+
+| Model level | Representation | Status |
+|---|---|---|
+| v0.1 — analytical exposure | $q(x)=\int_{-l/2}^{l/2}g(x-\xi)\,d\xi$, evaluated as Eq. (4) | Implemented and preserved |
+| v0.2 — discrete address-grid reconstruction | $q_h(x)=\sum_k h_k g(x-x_k)$, with midpoint locations and cell-width weights | Implemented; converges toward Eq. (4) |
+| Future — explicit scanning dynamics | DMD frames, mirror states and moving stage positions versus time, followed by 2D accumulated exposure | Not implemented |
+
+Here “address-grid” describes a spatial quadrature reconstruction based on
+the paper's address pitch, not a complete DMD scanning simulator or a fixed
+hardware-address realization at the feature boundaries.
+
+### Geometry and paper-parameter reconstruction
+
+For the particular square-array alignment of beam elements $(i,j)$ and
+$(i+1,j+A)$ with the scan direction, $\theta=\arctan(1/A)$. This geometry
+gives $\theta=\arctan(1/4)$ in Fig. 3; the relationship is not a universal
+DMD property. The transverse address pitch is Eq. (2):
+
+$$p_{add}=p\cos(\theta)/A.$$
+
+The stage displacement per switching interval is $p_{mov}=v/f$. With $v$
+in mm/s and pitches in µm, $p_{mov}=1000v/f$. Approximate synchronization
+$p_{mov}\approx p_{add}$ gives comparable address spacing along and across
+the scan. Redundancy is $R=N/A$ in the paper's alignment geometry; the API
+requires positive integer $A,N$ and exact divisibility to count whole writes.
+The paper discusses redundancy for $\theta<45$ degrees; all analysis cases
+use $A>1$. The API's $A=1$ case is the formal 45-degree geometric limit.
+
+`scripts/analyze_scanning_geometry.py` reconstructs Section 4.2 using
+$p=25$ µm, $A=16$, $N=768$, $v=24$ mm/s and $f=15400$ Hz:
+
+| Derived quantity | Computed value |
+|---|---:|
+| Tilt angle | 3.57633 degrees |
+| Address pitch | 1.559457 µm |
+| Moving pitch | 1.558442 µm |
+| Relative mismatch $\lvert p_{mov}-p_{add}\rvert/p_{add}$ | 0.0651% |
+| Redundancy | 48 |
+| Repeated-writing time factor $R/f$ | 0.0031169 s |
+
+These values come from `results/scanning_geometry_summary.json`. The paper
+reports both pitches as approximately 1.5 µm; its coarse reported values
+are not imposed as exact constraints. No corner-correction simulation is
+performed. Variables $A,p_{add},f,v,p_{mov},R$ connect this model to the
+paper's scanning direct-write scheme, without constituting hardware validation.
+
+### Address cells and normalized exposure
+
+Using the same Gaussian-radius convention as Eq. (1) and v0.1, the unit-
+integral kernel (units µm$^{-1}$) and dimensionless discrete exposure are
+
+$$g(x)=\frac{1}{\sqrt{2\pi}w}\exp\left(-\frac{x^2}{2w^2}\right),$$
+
+$$q_{discrete}(x)=\sum_k h_k g(x-x_k).$$
+
+`build_address_cells(l, p_add)` returns midpoint addresses $x_k$ and cell
+widths $h_k$ in µm. Full cells have width $p_{add}$ and are centered as a
+group about zero. Any leftover width is split equally into **two partial
+boundary cells**, sampled at their actual midpoints. If $l<p_{add}$, one
+cell spans the entire interval. Thus the weights sum to the requested $l$
+within floating-point tolerance, and the feature remains symmetric.
+
+For a width of 10 µm and pitch of 3 µm, centers are
+`[-4.75, -3, 0, 3, 4.75]` µm with weights `[0.5, 3, 3, 3, 0.5]` µm.
+No feature-width snapping or post-hoc curve normalization is used. The
+boundary midpoints are not generally separated by exactly $p_{add}$ from
+their neighbors. This is a feature-centered quadrature convention, rather
+than a simulation of a fixed global hardware-address grid or its phase.
+
+The spatial weights are required because Eq. (4) convolves a unit-amplitude
+written interval with $g$: equal full cells give $p_{add}\sum_k g(x-x_k)$.
+The partial cells use their actual widths. **As address pitch becomes small
+relative to the Gaussian beam radius, the explicit discrete exposure sum
+converges to analytical Eq. (4).** Coarse grids can produce normalized peaks
+above one; these are retained, rather than clipped or scaled to fit Eq. (4).
+
+### Physical dose scale versus shape convergence
+
+Eq. (3) gives physical repeated-writing dose $e(x)=(R/f)I(x)$; $R/f$ is an
+exposure-time factor, not dimensionless dose. The wide-feature scale $E_0$
+in Eq. (4) absorbs overall exposure amplitude. The convergence study compares
+normalized spatial profiles and deliberately factors that amplitude out.
+Changing $A$ changes both address pitch **and physical redundancy/dose** at
+fixed $N,f$; it is not physically dose-neutral.
+
+Only $p_{add}$ enters the one-dimensional shape sweep. The Section 4.2
+$v,f$ values establish the separate $A=16$ synchronization check; the
+convergence script does not assert that fixed $v/f$ remains synchronized
+at other $A$ values. Temporal scanning and DMD frame scheduling are absent.
+
+### Quantitative convergence
+
+`scripts/analyze_discrete_convergence.py` uses $l=10$ µm, $w=2$ µm,
+$p=25$ µm and $A=4,8,16,32,64$ (all divide $N=768$). Both models are
+evaluated on the same 6001-point uniform grid over $[-17,17]$ µm, extending
+six Gaussian radii beyond each feature edge. Reported errors are
+$\lVert q_{discrete}-q_{analytic}\rVert_2/\lVert q_{analytic}\rVert_2$
+and $\max_x\lvert q_{discrete}-q_{analytic}\rvert$ over this window.
+These are **numerical dose-profile errors, not EPE or CD metrics**.
+
+| A | Address pitch (µm) | Relative L2 error | Maximum absolute error |
+|---:|---:|---:|---:|
+| 4 | 6.063391 | 1.98417e-1 | 3.26487e-1 |
+| 8 | 3.100868 | 3.09971e-2 | 2.91572e-2 |
+| 16 | 1.559457 | 7.14473e-3 | 6.38814e-3 |
+| 32 | 0.780869 | 1.75282e-3 | 1.55463e-3 |
+| 64 | 0.390577 | 4.35387e-4 | 3.86520e-4 |
+
+The table is computed by the script and stored, together with its evaluation
+window and cell counts, in `results/discrete_convergence_summary.json`.
+Both errors decrease at every refinement in this deterministic sequence.
+Partial-cell alignment can affect other sequences; no universal monotonic
+behavior or experimentally demonstrated convergence order is claimed.
+
+![Discrete Gaussian writing profiles approaching analytical Eq. (4)](results/discrete_vs_analytic.png)
+
+At small pitch the discrete and analytical profiles nearly overlap. The
+coarse $A=4$ profile shows the spatial-sampling effect without amplitude fitting.
+
+![Relative L2 and maximum absolute profile errors versus normalized address pitch](results/discrete_convergence_error.png)
+
+Smaller $p_{add}/w$ reduces both errors. No power-law fit is imposed.
+
+Run the new analyses after the [Quick start](#quick-start) installation:
+
+```powershell
+python scripts/analyze_scanning_geometry.py
+python scripts/analyze_discrete_convergence.py
+```
+
+The public API lives in `dmdlitho.scanning`: `DMDScanParameters`,
+`build_address_cells`, `discrete_normalized_dose_profile` and
+`profile_error_metrics` (returning `ProfileErrors`). Existing v0.1 exports
+remain unchanged. Local validation gives **97 passed**: the original 50
+tests plus 47 scanning tests covering geometry, invalid inputs, symmetry,
+cell weights, independent Gaussian integration, convergence and evaluation-
+grid refinement. Both new figures were visually inspected. The original
+107.96%, 110.93%, 109.13% regressions and all v0.1 assumptions are preserved.
+The model reconstructs spatial address sampling; it does not validate hardware
+or reproduce frame-by-frame or two-dimensional DMD scanning.
+
 ## Python API example
 
 ```python
@@ -269,11 +418,12 @@ print(uncorrected.cd_um, corrected.dose_scale)
 - `resist.py`: Eq. (6), removed-depth convention and physical clipping.
 - `cd.py`: Fig. 4 crossings, missing-edge handling and matching index.
 - `correction.py`: width/dose inverse problems and continuous resolution limits.
+- `scanning.py`: v0.2 alignment geometry, weighted discrete exposure and profile errors.
 - `scripts/`: Figs. 5–7, numerical summaries and documented reporting choices.
 - `tests/`: exposure, resist, CD, feasibility, invalid inputs and reproduction regressions.
 
-Local validation used the project's Python 3.11 environment and editable
-installation. `python -m pytest -q`: **50 passed**. Tests cover Gaussian
+The v0.1 baseline validation used the project's Python 3.11 environment and
+editable installation: **50 passed**. Its tests cover Gaussian
 symmetry, independent quadrature, Eq. (4)/(7) agreement, saturation,
 threshold conventions, dose crossings, incomplete clearing, both correction
 problems, published percentages and contrast trends. All three scripts ran
@@ -295,10 +445,10 @@ two-dimensional scanning engine or experimentally calibrated resist
 kinetics. The original paper also presents its resist model as a way to
 study the OPC procedure rather than accurately predict real development.
 
-Possible future work starts with discrete DMD scanning and convergence
-toward the analytical model, followed by 2D exposure, frame sequencing and
-stage motion, redundancy-based dose modulation, corner/distortion correction
-and calibrated PSF/resist models. None is implemented in v0.1; there is no
-GPU, neural model, GDSII support or GUI.
+Future work beyond the v0.2 midpoint model includes a fixed hardware-
+address grid and its phase, 2D exposure, explicit frame sequencing and stage
+trajectories, redundancy-based dose modulation, corner/distortion correction
+and calibrated PSF/resist models. These features remain unimplemented; there
+is no GPU, neural model, GDSII support or GUI.
 
 The original paper PDF is excluded. Code is provided under the MIT license.
